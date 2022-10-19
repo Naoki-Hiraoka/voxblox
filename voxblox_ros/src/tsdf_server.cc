@@ -31,6 +31,7 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
       color_map_(new RainbowColorMap()),
       publish_pointclouds_on_update_(false),
       publish_slices_(false),
+      output_mesh_as_pointcloud_(false),
       publish_pointclouds_(false),
       publish_tsdf_map_(false),
       cache_mesh_(false),
@@ -60,6 +61,14 @@ TsdfServer::TsdfServer(const ros::NodeHandle& nh,
                                   &TsdfServer::insertPointcloud, this);
 
   mesh_pub_ = nh_private_.advertise<voxblox_msgs::Mesh>("mesh", 1, true);
+
+  nh_private_.param("output_mesh_as_pointcloud", output_mesh_as_pointcloud_,
+                    output_mesh_as_pointcloud_);
+  if (output_mesh_as_pointcloud_) {
+    mesh_pointcloud_pub_ =
+        nh_private_.advertise<pcl::PointCloud<pcl::PointXYZRGB>>(
+            "mesh_pointcloud", 1, true);
+  }
 
   // Publishing/subscribing to a layer from another node (when using this as
   // a library, for example within a planner).
@@ -509,6 +518,14 @@ void TsdfServer::updateMesh() {
   mesh_msg.header.frame_id = world_frame_;
   mesh_pub_.publish(mesh_msg);
 
+  if (output_mesh_as_pointcloud_) {
+    pcl::PointCloud<pcl::PointXYZRGB> pointcloud;
+    fillPointcloudWithMesh(mesh_layer_, color_mode_, &pointcloud);
+    pcl_conversions::toPCL(ros::Time::now(), pointcloud.header.stamp);
+    pointcloud.header.frame_id = world_frame_;
+    mesh_pointcloud_pub_.publish(pointcloud);
+  }
+
   if (cache_mesh_) {
     cached_mesh_msg_ = mesh_msg;
   }
@@ -541,6 +558,14 @@ bool TsdfServer::generateMesh() {
   generateVoxbloxMeshMsg(mesh_layer_, color_mode_, &mesh_msg);
   mesh_msg.header.frame_id = world_frame_;
   mesh_pub_.publish(mesh_msg);
+
+  if (output_mesh_as_pointcloud_) {
+    pcl::PointCloud<pcl::PointXYZRGB> pointcloud;
+    fillPointcloudWithMesh(mesh_layer_, color_mode_, &pointcloud);
+    pcl_conversions::toPCL(ros::Time::now(), pointcloud.header.stamp);
+    pointcloud.header.frame_id = world_frame_;
+    mesh_pointcloud_pub_.publish(pointcloud);
+  }
 
   publish_mesh_timer.Stop();
 
