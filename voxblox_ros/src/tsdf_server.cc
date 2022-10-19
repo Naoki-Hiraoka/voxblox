@@ -431,6 +431,7 @@ void TsdfServer::publishTsdfSurfacePoints() {
   createSurfacePointcloudFromTsdfLayer(tsdf_map_->getTsdfLayer(),
                                        surface_distance_thresh, &pointcloud);
 
+  pcl_conversions::toPCL(ros::Time::now(), pointcloud.header.stamp);
   pointcloud.header.frame_id = world_frame_;
   surface_pointcloud_pub_.publish(pointcloud);
 }

@@ -116,6 +116,7 @@ void SimpleTsdfVisualizer::run(const Layer<TsdfVoxel>& tsdf_layer) {
     voxblox::createSurfaceDistancePointcloudFromTsdfLayer(
         tsdf_layer, surface_distance_thresh_m, &pointcloud);
 
+    pcl_conversions::toPCL(ros::Time::now(), pointcloud.header.stamp);
     pointcloud.header.frame_id = tsdf_world_frame_;
     surface_pointcloud_pub_.publish(pointcloud);
   }
